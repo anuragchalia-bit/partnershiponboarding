@@ -169,6 +169,31 @@ function parseDeal(deal, prev, eventType) {
   };
 }
 
+function firstPayloadObject(value) {
+  if (Array.isArray(value)) return value[0] || null;
+  return value || null;
+}
+
+function getWebhookDeal(payload) {
+  return firstPayloadObject(
+    payload.current ||
+    payload.data?.current ||
+    payload.data ||
+    payload.deal ||
+    null
+  );
+}
+
+function getWebhookPrevious(payload) {
+  return firstPayloadObject(payload.previous || payload.data?.previous || {});
+}
+
+function getWebhookEvent(payload) {
+  const action = payload.meta?.action || payload.action || payload.event;
+  const object = payload.meta?.object || payload.object;
+  return [action, object].filter(Boolean).join('.') || 'updated';
+}
+
 // ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
@@ -178,15 +203,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.post('/webhook', async (req, res) => {
   try {
     const payload = req.body;
-    const deal    = payload.current;
-    const prev    = payload.previous || {};
+    const deal    = getWebhookDeal(payload);
+    const prev    = getWebhookPrevious(payload);
 
-    if (!deal) return res.status(400).send('no deal in payload');
+    if (!deal) {
+      console.log('[webhook] ignored: no deal in payload');
+      return res.status(200).send('ignored: no deal in payload');
+    }
     if (Number(deal.pipeline_id) !== ONBOARDING_PIPELINE_ID) {
       return res.status(200).send('skipped: wrong pipeline');
     }
 
-    const row = parseDeal(deal, prev, payload.event || 'updated');
+    const row = parseDeal(deal, prev, getWebhookEvent(payload));
     row.stage_name = await getStageName(row.stage_id);
     insertDeal.run(row);
 
