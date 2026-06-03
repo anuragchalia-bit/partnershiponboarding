@@ -8,9 +8,11 @@ services:
     envVars:
       - key: PIPEDRIVE_API_TOKEN
         sync: false
+      - key: DB_PATH
+        value: /opt/render/project/src/data/onboarding.db
       - key: NODE_ENV
         value: production
     disk:
       name: data
-      mountPath: /opt/render/project/src
+      mountPath: /opt/render/project/src/data
       sizeGB: 1
