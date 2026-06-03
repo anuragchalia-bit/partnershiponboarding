@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: aisensy-onboarding-dashboard
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PIPEDRIVE_API_TOKEN
+        sync: false
+      - key: NODE_ENV
+        value: production
+    disk:
+      name: data
+      mountPath: /opt/render/project/src
+      sizeGB: 1
